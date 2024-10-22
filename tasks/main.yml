@@ -1,0 +1,45 @@
+---
+- name: Copy System Export
+  become: no
+  copy:
+      src: files/artifactory-system-export
+      dest: "{{ ansible_user_dir }}"
+      mode: 0444
+  when: artifactory_install
+  
+- name: Add Artifactory Repository Key
+  become: yes
+  apt_key:
+      url: "https://bintray.com/user/downloadSubjectPublicKey?username=jfrog"
+      state: present
+  when: artifactory_install and (ansible_distribution == "Ubuntu")
+
+- name: Add Artifactory Repository
+  become: yes
+  apt_repository:
+      repo: "deb https://jfrog.bintray.com/artifactory-debs {{ ansible_distribution_release }} main"
+      state: present
+  when: artifactory_install and (ansible_distribution == "Ubuntu")
+
+- name: Install Artifactory
+  become: yes
+  apt:
+      name: "jfrog-artifactory-oss"
+      state: present
+      allow_unauthenticated: yes
+      update_cache: yes
+  when: artifactory_install and (ansible_distribution == "Ubuntu" )
+
+- name: Start Artifactory
+  become: yes
+  service:
+      name: artifactory
+      state: restarted
+  when: artifactory_install
+
+- name: Check Artifactory PID file
+  become: yes
+  file:
+      path: /var/opt/jfrog/run/artifactory.pid
+      state: file
+  when: artifactory_install
